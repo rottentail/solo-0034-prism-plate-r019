@@ -98,3 +98,68 @@ func (path Path) Contains(p Point, rule string) bool {
 	}
 	return winding != 0
 }
+
+// ContainsAnyRing reports whether any single contour encloses p, independent of
+// the fill rule. Pick uses it to distinguish a real hole from a point merely
+// inside a bounding box: a hole test is false while this test is true.
+func (path Path) ContainsAnyRing(p Point) bool {
+	for _, ring := range path {
+		winding := 0
+		for i, a := range ring {
+			b := ring[(i+1)%len(ring)]
+			if (a.Y <= p.Y && b.Y > p.Y) || (b.Y <= p.Y && a.Y > p.Y) {
+				x := a.X + (p.Y-a.Y)*(b.X-a.X)/(b.Y-a.Y)
+				if x > p.X {
+					if b.Y > a.Y {
+						winding++
+					} else {
+						winding--
+					}
+				}
+			}
+		}
+		if winding != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// Bounds returns the axis-aligned bounds of every flattened vertex.
+func (path Path) Bounds() (Point, Point) {
+	lo := Point{X: math.Inf(1), Y: math.Inf(1)}
+	hi := Point{X: math.Inf(-1), Y: math.Inf(-1)}
+	for _, ring := range path {
+		for _, v := range ring {
+			lo.X = math.Min(lo.X, v.X)
+			lo.Y = math.Min(lo.Y, v.Y)
+			hi.X = math.Max(hi.X, v.X)
+			hi.Y = math.Max(hi.Y, v.Y)
+		}
+	}
+	return lo, hi
+}
+
+// Distance returns the shortest distance from p to any contour segment. It is
+// the edge tolerance basis: zero on the outline, positive on either side.
+func (path Path) Distance(p Point) float64 {
+	best := math.Inf(1)
+	for _, ring := range path {
+		for i, a := range ring {
+			b := ring[(i+1)%len(ring)]
+			best = math.Min(best, SegmentDistance(p, a, b))
+		}
+	}
+	return best
+}
+
+// SegmentDistance is the Euclidean distance from p to segment ab.
+func SegmentDistance(p, a, b Point) float64 {
+	dx, dy := b.X-a.X, b.Y-a.Y
+	if dx == 0 && dy == 0 {
+		return math.Hypot(p.X-a.X, p.Y-a.Y)
+	}
+	t := ((p.X-a.X)*dx + (p.Y-a.Y)*dy) / (dx*dx + dy*dy)
+	t = math.Max(0, math.Min(1, t))
+	return math.Hypot(p.X-(a.X+t*dx), p.Y-(a.Y+t*dy))
+}

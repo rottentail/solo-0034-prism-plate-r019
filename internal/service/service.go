@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"prismplate/internal/bundle"
 	"prismplate/internal/exposure"
+	"prismplate/internal/pick"
 	"prismplate/internal/raster"
 	"prismplate/internal/repository"
 	"prismplate/internal/scene"
@@ -157,6 +158,26 @@ func (s *Service) Render(ctx context.Context, id string, revision int, format st
 		return repository.Artifact{}, err
 	}
 	return s.render(ctx, id, r, format)
+}
+
+// Hit answers a canvas click against one frozen revision. It recompiles from the
+// same admission path as rendering, so selection cannot describe a document the
+// renderer would reject.
+func (s *Service) Hit(id string, revision int, x, y float64, opt pick.Options) (pick.Result, error) {
+	r, err := s.capture(id, revision)
+	if err != nil {
+		return pick.Result{}, err
+	}
+	c, err := validate.Compile(r.Document)
+	if err != nil {
+		return pick.Result{}, err
+	}
+	res, err := pick.Hit(c, x, y, opt)
+	if err != nil {
+		return res, err
+	}
+	res.Plate, res.Revision, res.SceneDigest = id, r.Number, r.Digest
+	return res, nil
 }
 func (s *Service) Submit(id string, revision int, format string) (exposure.Job, error) {
 	r, err := s.capture(id, revision)

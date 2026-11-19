@@ -32,6 +32,10 @@
       "command": "python3 scripts/walkthrough.py --workflow svg"
     },
     {
+      "workflow_id": "selection",
+      "command": "python3 scripts/walkthrough.py --workflow selection"
+    },
+    {
       "workflow_id": "exposure",
       "command": "python3 scripts/walkthrough.py --workflow exposure"
     },

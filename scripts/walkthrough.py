@@ -84,6 +84,39 @@ def main():
             elif w=='rejection':
                 bad=copy.deepcopy(seed);bad['id']='oversize';bad['document']['width']=513;call('POST','/v1/plates',bad,status=400);call('GET','/v1/plates/oversize',status=404)
                 bad=copy.deepcopy(seed);bad['id']='invalid-brush';bad['document']['layers'][0]['shapes'][0]['brush']['stops'][1]['at']=0;call('POST','/v1/plates',bad,status=400);assert render()['revision']==1
+            elif w=='selection':
+                pick_seed=json.loads((ROOT/'examples/selection-proof.json').read_text())
+                call('POST','/v1/plates',pick_seed,status=201)
+                def hit(x,y,options=None,status=200,revision=1):
+                    body={'x':x,'y':y}
+                    if options is not None:body['options']=options
+                    return call('POST',f'/v1/plates/selection-proof/hit?revision={revision}',body,status=status)
+                # Closed hole: the enclosing outline must not win.
+                r=hit(65,25);ring=next(c for c in r['candidates'] if c['shape_id']=='ring')
+                assert ring['hole'] and not ring['selectable'] and ring['occlusion']=='hole';assert r['selected']=='under-plate'
+                # Layer clip: fill covers the point, layer excludes it, nothing paints.
+                r=hit(115,60);cover=next(c for c in r['candidates'] if c['shape_id']=='cover-block')
+                assert cover['layer_clip']=='clipped' and not cover['selectable'];assert 'selected' not in r
+                # Occlusion: earlier opaque shape is covered, not selected; opt-in pick-through exposes it.
+                r=hit(60,60);under=next(c for c in r['candidates'] if c['shape_id']=='under-plate')
+                assert under['occlusion']=='covered' and not under['selectable'];assert r['selected']=='cover-block'
+                r=hit(60,60,{'include_covered':True});under=next(c for c in r['candidates'] if c['shape_id']=='under-plate')
+                assert under['selectable'] and under['occluded_by']
+                # Low opacity remains selectable; raising the floor only changes selection.
+                r=hit(30,70);veil=next(c for c in r['candidates'] if c['shape_id']=='veil-band')
+                assert veil['selectable'] and veil['contribution']>0 and len(r['ambiguous'])>1
+                r=hit(30,70,{'min_contribution':0.05});veil=next(c for c in r['candidates'] if c['shape_id']=='veil-band')
+                assert not veil['selectable'] and veil['occlusion']=='faint'
+                # Transparent gradient: opaque end selects the gradient, transparent end contributes little.
+                assert hit(135,105)['selected']=='fade-bar'
+                fade=next(c for c in hit(22,105)['candidates'] if c['shape_id']=='fade-bar')
+                assert fade['contribution']<0.01 and fade['local_alpha']<0.05
+                # Edge tolerance is a parameter, and options are echoed for reproducibility.
+                near=hit(86,25);assert near['options']['edge_tolerance_px']==1.5
+                tight=hit(86,25,{'edge_tolerance_px':0.25});assert all(c['shape_id']!='ring' or not c['selectable'] for c in tight['candidates'])
+                # Rendering is untouched by picking.
+                a=render();assert a['digest']=='f1004dd8b0af9bf7150480e0ff356bce184aa50aeeef8ae615a5c099b68b8dec'
+                hit(50,50,{'max_candidates':99},status=400);hit(10,10,status=404,revision=9);hit(500,500,status=400)
             else:raise RuntimeError('unknown workflow '+w)
             print(json.dumps({'workflow':w,'result':'passed','entry':'HTTP','port':port},ensure_ascii=False))
         finally:stop();log.close()

@@ -39,7 +39,21 @@ python3 scripts/walkthrough.py --workflow png
 python3 scripts/walkthrough.py --workflow bundle
 ```
 
-可选workflow值：create、revise、branch、archive、png、svg、exposure、cancel、artifact、proof、bundle、restore、isolation、rejection。每个流程在临时数据根启动实际HTTP服务，完成后正常关停，不占用长期端口、不修改演示输入。
+可选workflow值：create、revise、branch、archive、png、svg、exposure、cancel、artifact、proof、bundle、restore、isolation、rejection、selection。每个流程在临时数据根启动实际HTTP服务，完成后正常关停，不占用长期端口、不修改演示输入。
+
+## 画布拾取
+
+`POST /v1/plates/{id}/hit?revision=N` 把点击位置解释为可选择的形状候选，而不是返回最上层包围盒。候选按可调权重稳定排序，并分别报告镂空、图层裁域/蒙版、笔刷透明、低透明贡献、遮挡和联合归因；被覆盖的形状默认不可选，可用 `include_covered` 显式穿透。语义、容差与不可唯一归因的边界见 docs/api.md。
+
+```sh
+curl -H 'Content-Type: application/json' --data-binary @examples/selection-proof.json \
+  http://127.0.0.1:7846/v1/plates
+curl -H 'Content-Type: application/json' -d '{"x":65,"y":25}' \
+  'http://127.0.0.1:7846/v1/plates/selection-proof/hit?revision=1'
+python3 scripts/selection_evidence.py --out var/selection-evidence
+```
+
+`selection_evidence.py` 会实际渲染 PNG，用标准库解码并核对选择解释与像素关系，写出原图、标注图和 evidence.json。该示例场景覆盖镂空、裁域、5% 低透明、透明渐变两端、不透明遮挡与联合叠色。
 
 ## 持久化与范围
 

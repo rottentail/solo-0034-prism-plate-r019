@@ -1,0 +1,137 @@
+{
+  "id": "selection-proof",
+  "title": "拾取语义校样",
+  "document": {
+    "width": 160,
+    "height": 120,
+    "background": {
+      "r": 0.05,
+      "g": 0.06,
+      "b": 0.08,
+      "a": 1
+    },
+    "layers": [
+      {
+        "id": "underlay",
+        "opacity": 1,
+        "blend": "normal",
+        "shapes": [
+          {
+            "id": "under-plate",
+            "fill_rule": "nonzero",
+            "path": [
+              {"kind": "M", "points": [{"x": 10, "y": 10}]},
+              {"kind": "L", "points": [{"x": 70, "y": 10}]},
+              {"kind": "L", "points": [{"x": 70, "y": 110}]},
+              {"kind": "L", "points": [{"x": 10, "y": 110}]},
+              {"kind": "Z"}
+            ],
+            "transform": [1, 0, 0, 1, 0, 0],
+            "brush": {"kind": "solid", "color": {"r": 0.15, "g": 0.35, "b": 0.6, "a": 1}}
+          }
+        ]
+      },
+      {
+        "id": "cover",
+        "opacity": 1,
+        "blend": "normal",
+        "clip": [
+          {"kind": "M", "points": [{"x": 40, "y": 30}]},
+          {"kind": "L", "points": [{"x": 100, "y": 30}]},
+          {"kind": "L", "points": [{"x": 100, "y": 100}]},
+          {"kind": "L", "points": [{"x": 40, "y": 100}]},
+          {"kind": "Z"}
+        ],
+        "shapes": [
+          {
+            "id": "cover-block",
+            "fill_rule": "nonzero",
+            "path": [
+              {"kind": "M", "points": [{"x": 50, "y": 40}]},
+              {"kind": "L", "points": [{"x": 130, "y": 40}]},
+              {"kind": "L", "points": [{"x": 130, "y": 90}]},
+              {"kind": "L", "points": [{"x": 50, "y": 90}]},
+              {"kind": "Z"}
+            ],
+            "transform": [1, 0, 0, 1, 0, 0],
+            "brush": {"kind": "solid", "color": {"r": 0.95, "g": 0.55, "b": 0.15, "a": 1}}
+          }
+        ]
+      },
+      {
+        "id": "ring-layer",
+        "opacity": 1,
+        "blend": "normal",
+        "shapes": [
+          {
+            "id": "ring",
+            "fill_rule": "evenodd",
+            "path": [
+              {"kind": "M", "points": [{"x": 40, "y": 5}]},
+              {"kind": "L", "points": [{"x": 85, "y": 5}]},
+              {"kind": "L", "points": [{"x": 85, "y": 45}]},
+              {"kind": "L", "points": [{"x": 40, "y": 45}]},
+              {"kind": "Z"},
+              {"kind": "M", "points": [{"x": 52, "y": 15}]},
+              {"kind": "L", "points": [{"x": 73, "y": 15}]},
+              {"kind": "L", "points": [{"x": 73, "y": 33}]},
+              {"kind": "L", "points": [{"x": 52, "y": 33}]},
+              {"kind": "Z"}
+            ],
+            "transform": [1, 0, 0, 1, 0, 0],
+            "brush": {"kind": "solid", "color": {"r": 0.2, "g": 0.75, "b": 0.7, "a": 1}}
+          }
+        ]
+      },
+      {
+        "id": "veil",
+        "opacity": 0.05,
+        "blend": "normal",
+        "shapes": [
+          {
+            "id": "veil-band",
+            "fill_rule": "nonzero",
+            "path": [
+              {"kind": "M", "points": [{"x": 20, "y": 60}]},
+              {"kind": "L", "points": [{"x": 100, "y": 60}]},
+              {"kind": "L", "points": [{"x": 100, "y": 110}]},
+              {"kind": "L", "points": [{"x": 20, "y": 110}]},
+              {"kind": "Z"}
+            ],
+            "transform": [1, 0, 0, 1, 0, 0],
+            "brush": {"kind": "solid", "color": {"r": 1, "g": 1, "b": 1, "a": 1}}
+          }
+        ]
+      },
+      {
+        "id": "fade",
+        "opacity": 1,
+        "blend": "normal",
+        "shapes": [
+          {
+            "id": "fade-bar",
+            "fill_rule": "nonzero",
+            "path": [
+              {"kind": "M", "points": [{"x": 20, "y": 95}]},
+              {"kind": "L", "points": [{"x": 140, "y": 95}]},
+              {"kind": "L", "points": [{"x": 140, "y": 115}]},
+              {"kind": "L", "points": [{"x": 20, "y": 115}]},
+              {"kind": "Z"}
+            ],
+            "transform": [1, 0, 0, 1, 0, 0],
+            "brush": {
+              "kind": "linear",
+              "from": {"x": 20, "y": 0},
+              "to": {"x": 140, "y": 0},
+              "color": {"r": 0, "g": 0, "b": 0, "a": 0},
+              "stops": [
+                {"at": 0, "color": {"r": 0.9, "g": 0.2, "b": 0.6, "a": 0}},
+                {"at": 1, "color": {"r": 0.9, "g": 0.2, "b": 0.6, "a": 1}}
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

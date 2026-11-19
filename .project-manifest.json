@@ -23,6 +23,11 @@
       "path": "internal/paint"
     },
     {
+      "id": "pick",
+      "name": "画布拾取与归因",
+      "path": "internal/pick"
+    },
+    {
       "id": "raster",
       "name": "PNG采样",
       "path": "internal/raster"
@@ -171,6 +176,26 @@
       "success": "输出有固定资源引用的SVG",
       "failure": "未知稿本拒绝",
       "verification": "python3 scripts/walkthrough.py --workflow svg"
+    },
+    {
+      "id": "selection",
+      "name": "画布拾取归因",
+      "entry": "POST /v1/plates/{id}/hit?revision=1",
+      "module_ids": [
+        "transport",
+        "service",
+        "validate",
+        "geom",
+        "paint",
+        "pick"
+      ],
+      "steps": [
+        "从公开入口解析并获取固定稿本",
+        "跨职责解释镂空、裁域、透明与遮挡并稳定排序候选"
+      ],
+      "success": "候选按可调权重稳定排序并区分可见贡献与几何邻近",
+      "failure": "越界选项或画布外坐标400，未知稿本404",
+      "verification": "python3 scripts/walkthrough.py --workflow selection"
     },
     {
       "id": "exposure",

@@ -64,3 +64,81 @@ func Over(dst, src Pixel, mode string) Pixel {
 	}
 	return Pixel{blend(dst.R, src.R), blend(dst.G, src.G), blend(dst.B, src.B), src.A + dst.A*(1-src.A)}
 }
+
+// LayerSource is the layer-local source before the group opacity and blend mode
+// are applied. It is shared by raster and pick so hit explanations cannot drift
+// from the canonical pixel model.
+func LayerSource(l scene.CompiledLayer, p geom.Point) (Pixel, bool) {
+	return layerSource(l, p, -1)
+}
+func layerSource(l scene.CompiledLayer, p geom.Point, skipShape int) (Pixel, bool) {
+	if !LayerGate(l, p) {
+		return Pixel{}, false
+	}
+	var src Pixel
+	for i, s := range l.Shapes {
+		if i == skipShape {
+			continue
+		}
+		q := s.Inverse.Apply(p)
+		if s.Path.Contains(q, s.Shape.FillRule) {
+			src = Over(src, Sample(s.Shape.Brush, q), "normal")
+		}
+	}
+	return src, true
+}
+
+// LayerGate reports whether the layer's clip and mask admit this point. Pick uses
+// the same gate as the renderer, then explains it instead of re-implementing it.
+func LayerGate(l scene.CompiledLayer, p geom.Point) bool {
+	if len(l.Clip) > 0 && !l.Clip.Contains(p, "nonzero") {
+		return false
+	}
+	if len(l.Mask) > 0 && !l.Mask.Contains(p, "nonzero") {
+		return false
+	}
+	return true
+}
+
+// Composite renders one document-space sample with the same order and arithmetic
+// as the deterministic PNG path.
+func Composite(c scene.Compiled, p geom.Point) Pixel {
+	return composite(c, p, -1, -1)
+}
+func composite(c scene.Compiled, p geom.Point, skipLayer, skipShape int) Pixel {
+	dst := From(c.Document.Background)
+	for i, l := range c.Layers {
+		skip := -1
+		if i == skipLayer {
+			skip = skipShape
+		}
+		src, ok := layerSource(l, p, skip)
+		if !ok {
+			continue
+		}
+		dst = Over(dst, src.Scale(l.Layer.Opacity), l.Layer.Blend)
+	}
+	return dst
+}
+
+// CompositeLayerSource replaces the source of one layer with an already
+// computed layer-local source. It keeps every other layer, the group opacity and
+// the blend mode identical, so callers can measure a single shape's visual
+// contribution without repeating geometry tests.
+func CompositeLayerSource(c scene.Compiled, p geom.Point, layer int, source Pixel) Pixel {
+	dst := From(c.Document.Background)
+	for i, l := range c.Layers {
+		var src Pixel
+		var ok bool
+		if i == layer {
+			src, ok = source, true
+		} else {
+			src, ok = layerSource(l, p, -1)
+		}
+		if !ok {
+			continue
+		}
+		dst = Over(dst, src.Scale(l.Layer.Opacity), l.Layer.Blend)
+	}
+	return dst
+}

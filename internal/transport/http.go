@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"prismplate/internal/exposure"
+	"prismplate/internal/pick"
 	"prismplate/internal/repository"
 	"prismplate/internal/scene"
 	"prismplate/internal/service"
@@ -32,6 +33,8 @@ func failure(w http.ResponseWriter, err error) {
 		status = 409
 	case errors.Is(err, exposure.ErrBusy):
 		status = 429
+	case pick.IsOptionError(err):
+		status = 400
 	case errors.Is(err, context.DeadlineExceeded):
 		status = 504
 	case errors.Is(err, context.Canceled):
@@ -40,10 +43,16 @@ func failure(w http.ResponseWriter, err error) {
 	jsonOut(w, status, map[string]string{"error": err.Error()})
 }
 func decode(w http.ResponseWriter, r *http.Request, v any) error {
+	return decodeBody(w, r, v, false)
+}
+func decodeBody(w http.ResponseWriter, r *http.Request, v any, optional bool) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 8<<20)
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
 	if e := d.Decode(v); e != nil {
+		if optional && e == io.EOF {
+			return nil
+		}
 		return e
 	}
 	if e := d.Decode(new(any)); e != io.EOF {
@@ -127,6 +136,28 @@ func (a API) Handler() http.Handler {
 			return
 		}
 		jsonOut(w, 200, map[string]string{"state": "archived"})
+	})
+	mux.HandleFunc("POST /v1/plates/{id}/hit", func(w http.ResponseWriter, r *http.Request) {
+		n, e := revision(r)
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		var q struct {
+			X       float64      `json:"x"`
+			Y       float64      `json:"y"`
+			Options pick.Options `json:"options"`
+		}
+		if e := decode(w, r, &q); e != nil {
+			failure(w, e)
+			return
+		}
+		v, e := a.Service.Hit(r.PathValue("id"), n, q.X, q.Y, q.Options)
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		jsonOut(w, 200, v)
 	})
 	mux.HandleFunc("POST /v1/plates/{id}/render", func(w http.ResponseWriter, r *http.Request) {
 		n, e := revision(r)
